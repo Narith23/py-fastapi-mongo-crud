@@ -22,7 +22,7 @@ app = FastAPI(
 
 app.include_router(router)
 
-@app.get("/")
+@app.get("/", tags=["Default"])
 def read_root():
     return dict(
         status_code=status.HTTP_200_OK,
