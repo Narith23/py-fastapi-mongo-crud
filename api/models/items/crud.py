@@ -7,7 +7,8 @@ def item_helper(item) -> dict:
     return {
         "id": str(item["_id"]),
         "name": item["name"],
-        "description": item.get("description")
+        "email": item["email"] if "email" in item else None,
+        "description": item.get("description") if "description" in item else None,
     }
 
 async def create_item(data: dict) -> dict:
