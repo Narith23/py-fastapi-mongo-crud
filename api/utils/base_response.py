@@ -35,6 +35,24 @@ RESPONSE_422 = {
     }
 }
 
+RESPONSE_400 = {
+    "description": "Bad request",
+    "content": {
+        "application/json": {
+            "example": {
+                "status_code": 400,
+                "message": "Bad request",
+                "result": [
+                    {
+                        "error": "Invalid input data or malformed request",
+                        "detail": "Missing required parameter 'name'"
+                    }
+                ]
+            }
+        }
+    }
+}
+
 class BaseResponse(GenericModel, Generic[T]):
     status_code: int = Field(200, description="HTTP status code")
     message: str = Field("OK", description="Description or message")
