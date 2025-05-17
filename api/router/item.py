@@ -1,20 +1,36 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query, status
 
 from api.models.items.crud import create_item, get_all_items, get_item, update_item, delete_item
 from api.models.items.schema import Item, UpdateItem
+from api.utils.base_response import PaginatedResponse, PaginationItems, BaseResponse, RESPONSE_422
 
 router = APIRouter(
     prefix="/item",
     tags=["Item"]
 )
 
-@router.post("")
-async def add_item(item: Item):
-    return await create_item(item.dict())
+@router.get("", response_model=PaginatedResponse[Item])
+async def read_items(
+        page: int = Query(1, ge=1, description="Page number"),
+        size: int = Query(10, ge=1, le=100, description="Items per page")
+):
+    paginated_items = await get_all_items(page=page, size=size)
+    return PaginatedResponse[Item](
+        status_code=200,
+        message="Items retrieved successfully.",
+        result=paginated_items
+    )
 
-@router.get("")
-async def read_items():
-    return await get_all_items()
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=BaseResponse[Item], responses={422: RESPONSE_422})
+async def add_item(item: Item):
+    created_item = await create_item(item.dict())
+    if created_item is None:
+        raise HTTPException(status_code=400, detail="Failed to create item")
+    return BaseResponse[Item](
+        status_code=status.HTTP_201_CREATED,
+        message="Item created successfully",
+        result=created_item
+    )
 
 @router.get("/{item_id}")
 async def read_item(item_id: str):

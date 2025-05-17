@@ -1,26 +1,45 @@
+import math
+from typing import Optional
+
 from bson import ObjectId
 
 from api.core.database import items_collection
+from api.models.items.schema import Item
+from api.utils.base_response import PaginationItems
 
 
-def item_helper(item) -> dict:
-    return {
-        "id": str(item["_id"]),
-        "name": item["name"],
-        "email": item["email"] if "email" in item else None,
-        "description": item.get("description") if "description" in item else None,
-    }
+def item_helper(item) -> Item:
+    return Item(
+        id=str(item["_id"]),
+        name=item["name"],
+        email=item.get("email"),
+        description=item.get("description")
+    )
 
-async def create_item(data: dict) -> dict:
+async def get_all_items(page: int = 1, size: int = 100) -> PaginationItems[Item]:
+    skip = (page - 1) * size
+    total = await items_collection.count_documents({})
+    cursor = items_collection.find().skip(skip).limit(size)
+
+    items = [item_helper(doc) async for doc in cursor]
+    pages = math.ceil(total / size) if size else 0
+
+    return PaginationItems[Item](
+        data=items,
+        page=page,
+        size=size,
+        total=total,
+        pages=pages
+    )
+
+async def create_item(data: dict) -> Optional[Item]:
     result = await items_collection.insert_one(data)
+    if not result.inserted_id:
+        return None
     item = await items_collection.find_one({"_id": result.inserted_id})
-    return item_helper(item)
-
-async def get_all_items():
-    items = []
-    async for item in items_collection.find():
-        items.append(item_helper(item))
-    return items
+    if item:
+        return item_helper(item)
+    return None
 
 async def get_item(id: str):
     item = await items_collection.find_one({"_id": ObjectId(id)})
